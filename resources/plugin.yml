@@ -1,0 +1,5 @@
+name: Feistybloke
+main: net.noyark.feistybloke.Main
+api: ["1.0.0"]
+author: zzz1999
+load: POSTWORLD
