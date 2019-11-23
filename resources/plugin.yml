@@ -1,5 +1,11 @@
-name: Feistybloke
+name: FeistyBloke
 main: net.noyark.feistybloke.Main
 api: ["1.0.0"]
 author: zzz1999
 load: POSTWORLD
+version: 1.0.0
+
+permissions:
+  feistybloke.charge:
+    default: true
+    description: ""

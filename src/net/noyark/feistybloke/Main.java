@@ -46,8 +46,9 @@ public class Main extends PluginBase implements Listener {
     private static int food_level_reduce = 0;
     private static Item feisty_item = Item.get(Item.DIRT);
     private static boolean keep_movement_check = true;
+    private static int cooldown = 1000;
 
-    private static final Map<Long, Byte[]> players = new WeakHashMap<>();
+    private static final Map<Long, Long> players = new WeakHashMap<>();
 
     @Override
     public void onEnable() {
@@ -55,7 +56,7 @@ public class Main extends PluginBase implements Listener {
         this.getServer().getPluginManager().registerEvents(this, this);
         saveDefaultConfig();
         Config config = getConfig();
-        jumping_power = config.getDouble("settings.jumping-power", 2.1F);
+        jumping_power = config.getDouble("settings.charge-power", 2.1F);
         food_level_reduce = config.getInt("settings.food-level-reduce", 0);
         String fi = config.getString("settings.feisty-item", "3");
         String[] sa = fi.split(":");
@@ -71,33 +72,38 @@ public class Main extends PluginBase implements Listener {
             this.getLogger().error("无法解析feisty-item的格式,已默认为3:0");
         }
         keep_movement_check = config.getBoolean("settings.keep-movement-check",true);
+        cooldown = config.getInt("settings.cooldown",1000);
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void feistyLunch(PlayerInteractEvent event) {
-        if (event.getPlayer().getInventory().getItemInHand().equals(feisty_item)) {
+        if (event.getPlayer().getInventory().getItemInHand().equals(feisty_item,true,false)) {
             if (event.getPlayer().isFoodEnabled() && event.getPlayer().getFoodData().getLevel() >= food_level_reduce) {
                 if (event.getAction() == PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK || event.getAction() == PlayerInteractEvent.Action.RIGHT_CLICK_AIR) {
-                    double f = jumping_power;
-                    Player p = event.getPlayer();
-                    double yaw = p.getYaw();
-                    double pitch = p.getPitch();
+                    if (event.getPlayer().hasPermission("feistybloke.charge") && System.currentTimeMillis() > players.getOrDefault(event.getPlayer().getId(),0L)) {
+                        double f = jumping_power;
+                        Player p = event.getPlayer();
+                        double yaw = p.getYaw();
+                        double pitch = p.getPitch();
 
-                    p.setMotion(new Vector3(-Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f, -Math.sin(Math.toRadians(pitch)) * f * f, Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f));
-                    p.setDataFlag(Entity.DATA_FLAGS, 55, true);
+                        p.setMotion(new Vector3(-Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f, -Math.sin(Math.toRadians(pitch)) * f * f, Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f));
+                        p.setDataFlag(Entity.DATA_FLAGS, Entity.DATA_FLAG_SPIN_ATTACK, true);
 
-                    p.resetFallDistance();
-                    if(keep_movement_check) {
-                        p.setCheckMovement(false);
+                        p.resetFallDistance();
+                        if (keep_movement_check) {
+                            p.setCheckMovement(false);
+                        }
+                        //p.addEffect(Effect.getEffect(Effect.LEVITATION).setDuration(20));
+                        if (food_level_reduce > 0) {
+                            p.getFoodData().setLevel(p.getFoodData().getLevel() - food_level_reduce);
+                        }
+                        for (int i = 0; i < 5; i++) {
+                            p.getLevel().addParticle(new SmokeParticle(p.add(Math.cos(i * 60 * 3.14F / 180), -0.2F, Math.sin(i * 60 * 3.14F / 180))));
+                        }
+                        if (cooldown > 0) {
+                            players.put(p.getId(), System.currentTimeMillis() + cooldown);
+                        }
                     }
-                    //p.addEffect(Effect.getEffect(Effect.LEVITATION).setDuration(20));
-                    if (food_level_reduce > 0) {
-                        p.getFoodData().setLevel(p.getFoodData().getLevel() - food_level_reduce);
-                    }
-                    for (int i = 0; i < 5; i++) {
-                        p.getLevel().addParticle(new SmokeParticle(p.add(Math.cos(i * 60 * 3.14F / 180), 0, Math.sin(i * 60 * 3.14F / 180))));
-                    }
-                    players.put(p.getId(), new Byte[0]);
                 }
             }
         }
@@ -127,7 +133,7 @@ public class Main extends PluginBase implements Listener {
             if(keep_movement_check){
                 event.getPlayer().setCheckMovement(true);
             }
-            event.getPlayer().setDataFlag(Entity.DATA_FLAGS, 55, false);
+            event.getPlayer().setDataFlag(Entity.DATA_FLAGS, Entity.DATA_FLAG_SPIN_ATTACK, false);
         }
     }
 

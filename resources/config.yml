@@ -14,7 +14,13 @@
 #                                   |___/
 
 settings:
-  jumping-power: 2.1
+  # 冲击的力度
+  charge-power: 2.1
+  # 可设置每次冲击后减少的饥饿度以防止频繁冲刺
   food-level-reduce: 0
+  # 发动冲击时所需要拿在手上的物品,不建议设置为0
   feisty-item: "3:0"
+  # 是否在空中关闭移动监测
   keep-movement-check: on
+  # 连续冲刺冷却,单位ms
+  cooldown: 1000
